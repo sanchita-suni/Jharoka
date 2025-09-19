@@ -1,5 +1,6 @@
 import io
 import os
+import replicate
 from google.cloud import speech
 
 # --- IMPORTANT SETUP FOR GOOGLE CLOUD SPEECH-TO-TEXT API ---
@@ -13,6 +14,12 @@ from google.cloud import speech
 # Example (run this in your terminal):
 # export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keyfile.json"
 # -------------------------------------------------------------
+
+# Replicate API configuration
+REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
+
+if not REPLICATE_API_TOKEN:
+    print("Warning: REPLICATE_API_TOKEN not found. Image generation will use mock data.")
 
 def transcribe_audio(audio_file_bytes: bytes) -> str:
     """
@@ -45,3 +52,50 @@ def transcribe_audio(audio_file_bytes: bytes) -> str:
         transcribed_text += result.alternatives[0].transcript + " "
 
     return transcribed_text.strip()
+
+def generate_mockup_images(prompts: list) -> list:
+    """
+    Generates images based on a list of prompts using the Nano Banana (Replicate) API.
+    If the API token is not set, it returns placeholder images.
+    
+    Args:
+        prompts (list): A list of text prompts for image generation.
+    
+    Returns:
+        list: A list of URLs for the generated images.
+    """
+    image_urls = []
+    
+    if not REPLICATE_API_TOKEN:
+        print("REPLICATE_API_TOKEN is not set. Returning mock images.")
+        return [
+            "https://placehold.co/400x400/007bff/ffffff?text=Mockup+1", 
+            "https://placehold.co/400x400/ff6347/ffffff?text=Mockup+2"
+        ]
+
+    try:
+        for prompt in prompts:
+            # Call the Replicate API for each prompt
+            output = replicate.run(
+                "ai-banana/banana:9b49b917614d9de2be91097e3766736a6e27c7f466b020054700d3369a838531",
+                input={
+                    "model_id": "sdxl",
+                    "prompt": prompt,
+                    "model_revision": "fp16",
+                    "negative_prompt": "blurry, low quality, cartoon, anime",
+                    "prior_num_inference_steps": 25,
+                    "num_inference_steps": 50
+                }
+            )
+            image_url = output[0] # Get the URL of the generated image
+            image_urls.append(image_url)
+            print(f"Generated image for prompt '{prompt}': {image_url}")
+    except Exception as e:
+        print(f"An error occurred during image generation: {e}")
+        # Fallback to mock images if the API call fails
+        image_urls = [
+            "https://placehold.co/400x400/007bff/ffffff?text=Mockup+1", 
+            "https://placehold.co/400x400/ff6347/ffffff?text=Mockup+2"
+        ]
+        
+    return image_urls
