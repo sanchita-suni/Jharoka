@@ -22,13 +22,14 @@ def ensure_package_installed(package_name):
 try:
     ensure_package_installed("streamlit")
     ensure_package_installed("chromadb")
+    ensure_package_installed("sentence-transformers")
 except Exception as e:
     st.error(f"Failed to install a required package. Please check your internet connection or terminal permissions. Error: {e}")
     st.stop()
 
 # Import your custom modules after ensuring they are available
 from modules.database import add_artisan, search_artisans
-from modules.ai_chain import transcribe_audio
+from modules.ai_chain import transcribe_audio, generate_mockup_images
 
 # Set up the page configuration
 st.set_page_config(
@@ -47,13 +48,13 @@ def display_search_results(results):
 
     st.subheader("Search Results")
     for i in range(len(results['ids'])):
-        artisan_id = results['ids'][i]
-        metadata = results['metadatas'][i]
+        artisan_id = results['ids'][i][0] # Access the ID from the nested list
+        metadata = results['metadatas'][i][0] # Access the metadata
         profile = metadata.get('profile', {})
         images = metadata.get('images', [])
-        document_text = results['documents'][i]
+        document_text = results['documents'][i][0]
         
-        with st.expander(f"Artisan: {artisan_id}"):
+        with st.expander(f"Artisan: {profile.get('essence', 'Unknown Artisan')}"):
             st.markdown(f"**English Profile:** {profile.get('profile_en')}")
             st.markdown(f"**Hindi Profile:** {profile.get('profile_hi')}")
             st.markdown(f"**Kannada Profile:** {profile.get('profile_kn')}")
@@ -91,7 +92,6 @@ def artisan_portal_ui():
                     st.success("Audio transcribed successfully!")
 
                     # Placeholder for getting content from Gemini.
-                    # In the full project, this would be a call to Samhitha's module.
                     st.info("Generating content with Gemini (Mock)...")
                     profile_data = {
                         "essence": "Master Artisan",
