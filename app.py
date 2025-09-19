@@ -23,6 +23,9 @@ try:
     ensure_package_installed("streamlit")
     ensure_package_installed("chromadb")
     ensure_package_installed("sentence-transformers")
+    ensure_package_installed("replicate")
+    ensure_package_installed("requests")
+    ensure_package_installed("beautifulsoup4")
 except Exception as e:
     st.error(f"Failed to install a required package. Please check your internet connection or terminal permissions. Error: {e}")
     st.stop()
@@ -30,6 +33,7 @@ except Exception as e:
 # Import your custom modules after ensuring they are available
 from modules.database import add_artisan, search_artisans
 from modules.ai_chain import transcribe_audio, generate_mockup_images
+from modules.price_data import get_price_data
 
 # Set up the page configuration
 st.set_page_config(
@@ -138,6 +142,23 @@ def main_app():
             display_search_results(results)
         else:
             st.warning("Please enter a search query.")
+            
+    # New section for the Market Price Tool
+    st.sidebar.markdown("---")
+    st.sidebar.header("Market Price Tool")
+    price_query = st.sidebar.text_input("Enter product name:")
+    if st.sidebar.button("Get Price Data"):
+        if price_query:
+            with st.spinner("Fetching market data..."):
+                try:
+                    price_data = get_price_data(price_query)
+                    st.sidebar.subheader("Results:")
+                    st.sidebar.json(price_data)
+                except Exception as e:
+                    st.sidebar.error(f"An error occurred: {e}")
+        else:
+            st.sidebar.warning("Please enter a product name.")
 
 if __name__ == "__main__":
     main_app()
+
